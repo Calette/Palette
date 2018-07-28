@@ -51,6 +51,7 @@ public class WaterPalette : MonoBehaviour
     public Vector2 wind;
     public float amplitude;
 
+    public bool play;
     public float time;
 
     private MeshFilter filter;
@@ -142,12 +143,15 @@ public class WaterPalette : MonoBehaviour
 
     void Update()
     {
-        time += Time.deltaTime;
-        EvaluateWaves();
+        if (play)
+        {
+            time += Time.deltaTime;
+            EvaluateWaves();
+        }
     }
 
     // h(k, t) = h0 * exp{i * w(k) * t} + h0mk_Conj * exp{-i * w(k) * t}
-    // 明明是高度场,为什么是一个复数?????????????????????????????????
+    // 返回值是一个复数(参考Gerstner Wave,猜测x是高度(sinθ),y是位移量(cosθ))
     private Vector2 htilde(int index, Vector2 k)
     {
         Vector2 h0 = verttilde[index];
@@ -255,8 +259,8 @@ public class WaterPalette : MonoBehaviour
         float L2 = L * L;
 
         // l是修正系数,这里damping = 0.001
-        // 为什么要乘两次?????????????????????????????????
         float damping = 0.001f;
+        // l^2要乘以两次damping
         float l2 = L2 * damping * damping;
 
         return amplitude * Mathf.Exp(-1f / (k_length2 * L2)) / k_length4 * kDotW2 * Mathf.Exp(-k_length2 * l2);
@@ -295,7 +299,9 @@ public class WaterPalette : MonoBehaviour
 
         /*
         雅可比行列式
-        choppiness是控制
+        x = choppiness * D(x, t)
+        D(x, t) = 
+        choppiness是控制水平位移的常数,
         */
 
         Color[] colors = new Color[resolution * resolution];
@@ -331,6 +337,8 @@ public class WaterPalette : MonoBehaviour
     /*
     Displacement vector
 
+    猜测..:参考Gerstner Wave,h(x, t)的值是一个复数(Vecter2),x是高度(sinθ),y是位移量(cosθ)
+
     FT 傅里叶变换
     下面公式第一个 * 实际代表复数乘法
     h(x, t) = ∑ htilde(k,t) * exp(i * k·x))
@@ -339,13 +347,12 @@ public class WaterPalette : MonoBehaviour
     k∈(2πn / Lx, 2πn / Lz)
     x = (postion.x, postion.z)
 
-    现在的理解是取实数域(或者h就是取实数域,xz和noraml就是要和复数部分相乘,还没理解?????????????????????????????????):
     h:
-    h(x, t).x(实数域)
+    h(x, t).x
     x,z: 
-    参考Gerstner Wave(忘记了?????????????????????????????????),对xz进行位移
+    参考Gerstner Wave,对xz进行位移
     ∑ -i * k.direction * htilde(k,t) * exp(i * k·x))
-    因为是乘i,所以要和htilde_C.y相乘(实数域)
+    - i * i = 1
     用参数choppiness来控制偏移程度
     */
 
@@ -354,7 +361,7 @@ public class WaterPalette : MonoBehaviour
     应该是up(0, 1, 0) - 切线向量
     切线向量用求导来求出
     h'(x, t) = ∑ i * k * htilde(k,t) * exp(i * k·x))
-    因为是乘i,所以要和htilde_C.y相乘(实数域)
+    i * i = -1
     */
     private Vector3 Displacement(Vector2 x, float t, out Vector3 nor)
     {
@@ -385,9 +392,10 @@ public class WaterPalette : MonoBehaviour
 
                 height += htilde_C.x;
 
-                // h'(k)(x, t) = i * k.direction * htilde_C
+                // i * k * htilde_C
                 n += new Vector3(-kx * htilde_C.y, 0f, -kz * htilde_C.y);
 
+                // -i * k.direction * htilde_C(为什么有负号?????????????????????????????????)
                 displacement += new Vector2(kx / k_length * htilde_C.y, -kz / k_length * htilde_C.y);
             }
         }
