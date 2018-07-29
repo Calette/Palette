@@ -33,10 +33,10 @@ public class ShowFPS : MonoBehaviour {
     {
         GUIStyle bb = new GUIStyle();
         bb.normal.background = null;    //这是设置背景填充的
-        bb.normal.textColor = new Color(1f, 0.5f, 0f);   //设置字体颜色的
+        bb.normal.textColor = new Color(1f, 1f, 1f);   //设置字体颜色的
         bb.fontSize = 40;       //当然，这是字体大小
 
         //居中显示FPS
-        GUI.Label(new Rect(500, 0, 200, 200), m_FPS.ToString("#0.00"), bb);
+        GUI.Label(new Rect(0, 0, 200, 200), m_FPS.ToString("#0.00"), bb);
     }
 }

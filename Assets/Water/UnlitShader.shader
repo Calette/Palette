@@ -49,6 +49,7 @@
 			fixed4 frag (v2f i) : SV_Target
 			{
 				//return fixed4(i.normal, 1);
+				//return i.color;
 				fixed4 col = fixed4(i.uv, 1, 1) + i.color;
 				return col;
 			}

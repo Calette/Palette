@@ -21,6 +21,11 @@ https://developer.nvidia.com/gpugems/GPUGems/gpugems_ch01.html
 */
 
 /*
+k: Vector
+K: magnitude
+*/
+
+/*
 Coordinate, Domain and range
 k:(kx, kz) = (2πn / Lx, 2πm / Lz)
 n,m ∈ (-N / 2, N / 2)
@@ -43,14 +48,15 @@ A * B = (Ax * Bx - Ay * By, Ax * By + Ay * Bx)
 public class WaterPalette : MonoBehaviour
 {
     public Material mat;
-
     public int resolution;
     public float unitWidth;
-    public float choppiness;
     public float length;
-    public Vector2 wind;
     public float amplitude;
+    public Vector2 wind;
 
+    // play的时候上面的值不能更改
+
+    public float choppiness;
     public bool play;
     public float time;
 
@@ -198,7 +204,7 @@ public class WaterPalette : MonoBehaviour
         */
 
         // Floor(w' / w) * w 是为了取正整数倍的w
-        // 大概是为了正确的离散傅里叶变换
+        // 应该是为了正确的离散傅里叶变换
         return Mathf.Floor(Mathf.Sqrt(G * k.magnitude) / w) * w;
     }
 
@@ -235,7 +241,6 @@ public class WaterPalette : MonoBehaviour
 
     Phillips(k) = A ( exp(-1/((K * L)^2)) / K^4 ) * |dot(k, w)|^2 * exp(-k^2 * l^2)
 
-    K = k.magnitude
     L = V^2 / g 是持续维v的风在海面上产生最大可能性的海浪的波长
     w 是风力的方向
 
@@ -285,7 +290,7 @@ public class WaterPalette : MonoBehaviour
             {
                 int index = i * resolution + j;
                 Vector3 nor = new Vector3(0f, 0f, 0f);
-                Vector3 hd = Displacement(new Vector2(newVertices[index].x, newVertices[index].z), time, out nor);
+                Vector3 hd = Displacement(new Vector2(newVertices[index].x, newVertices[index].z), out nor);
                 newVertices[index].y = hd.y;
                 newVertices[index].z = vertices[index].z - hd.z * choppiness;
                 newVertices[index].x = vertices[index].x - hd.x * choppiness;
@@ -299,9 +304,16 @@ public class WaterPalette : MonoBehaviour
 
         /*
         雅可比行列式
-        x = choppiness * D(x, t)
-        D(x, t) = 
-        choppiness是控制水平位移的常数,
+        https://pic4.zhimg.com/80/v2-2cab501515edca3248af7c3f64251361_hd.jpg
+        x = x + choppiness * D(x, t)
+        D(x, t) = ∑ -i * k.normalized * htilde(k,t) * exp(i * k·x))
+        choppiness是控制水平位移的常数
+        choppiness * D(x, t) = 0时,雅可比行列式的值为1
+        J(x) = JxxJyy - JxyJyx
+        Jxx(x) = 1 + choppiness(Dx(x + 1) - Dx(x))
+        Jyy(x) = 1 + choppiness(Dy(x + 1) - Dy(x))
+        Jxy(x) = choppiness(Dxy(x + 1) - Dxy(x))
+        Jyx(x) = choppiness(Dxy(x + 1) - Dyy(x)) = Jxy(x)
         */
 
         Color[] colors = new Color[resolution * resolution];
@@ -315,13 +327,15 @@ public class WaterPalette : MonoBehaviour
                 Vector2 dDdy = Vector2.zero;
                 if (i != resolution - 1)
                 {
-                    dDdx = 0.5f * (hds[index] - hds[index + resolution]);
+                    dDdx = choppiness * (hds[index] - hds[index + resolution]);
                 }
                 if (j != resolution - 1)
                 {
-                    dDdy = 0.5f * (hds[index] - hds[index + 1]);
+                    dDdy = choppiness * (hds[index] - hds[index + 1]);
                 }
                 float jacobian = (1 + dDdx.x) * (1 + dDdy.y) - dDdx.y * dDdy.x;
+
+                // 下面是一些优化,不知道为什么?????????????????????????????????
                 Vector2 noise = new Vector2(Mathf.Abs(normals[index].x), Mathf.Abs(normals[index].z)) * 0.3f;
                 float turb = Mathf.Max(1f - jacobian + noise.magnitude, 0f);
                 float xx = 1f + 3f * Mathf.SmoothStep(1.2f, 1.8f, turb);
@@ -337,7 +351,7 @@ public class WaterPalette : MonoBehaviour
     /*
     Displacement vector
 
-    猜测..:参考Gerstner Wave,h(x, t)的值是一个复数(Vecter2),x是高度(sinθ),y是位移量(cosθ)
+    (猜测)参考Gerstner Wave,h(x, t)的值是一个复数(Vecter2),x是高度(sinθ),y是位移量(cosθ)
 
     FT 傅里叶变换
     下面公式第一个 * 实际代表复数乘法
@@ -351,7 +365,7 @@ public class WaterPalette : MonoBehaviour
     h(x, t).x
     x,z: 
     参考Gerstner Wave,对xz进行位移
-    ∑ -i * k.direction * htilde(k,t) * exp(i * k·x))
+    ∑ -i * k.normalized * htilde(k,t) * exp(i * k·x))
     - i * i = 1
     用参数choppiness来控制偏移程度
     */
@@ -363,7 +377,7 @@ public class WaterPalette : MonoBehaviour
     h'(x, t) = ∑ i * k * htilde(k,t) * exp(i * k·x))
     i * i = -1
     */
-    private Vector3 Displacement(Vector2 x, float t, out Vector3 nor)
+    private Vector3 Displacement(Vector2 x, out Vector3 nor)
     {
         float height = 0;
         Vector2 displacement = new Vector2(0f, 0f);
@@ -393,10 +407,13 @@ public class WaterPalette : MonoBehaviour
                 height += htilde_C.x;
 
                 // i * k * htilde_C
+                // 为什么是和复部相乘?????????????????????????????????
                 n += new Vector3(-kx * htilde_C.y, 0f, -kz * htilde_C.y);
 
-                // -i * k.direction * htilde_C(为什么有负号?????????????????????????????????)
-                displacement += new Vector2(kx / k_length * htilde_C.y, -kz / k_length * htilde_C.y);
+                // -i * k.direction * htilde_C
+                // 原代码有负号,应该是他写错了,修改后效果明显是对的
+                //displacement += new Vector2(kx / k_length * htilde_C.y, -kz / k_length * htilde_C.y);
+                displacement += new Vector2(kx / k_length * htilde_C.y, kz / k_length * htilde_C.y);
             }
         }
 
