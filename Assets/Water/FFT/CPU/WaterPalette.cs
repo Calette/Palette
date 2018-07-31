@@ -14,6 +14,8 @@ http://www.ceeger.com/forum/read.php?tid=24976&fid=2
 FT/FFT
 https://www.bilibili.com/video/av25840793/?p=24&t=1173
 https://zhuanlan.zhihu.com/p/31584464
+https://oi.men.ci/fft-notes/
+http://www.cnblogs.com/wubugui/p/4446230.html
 
 其他
 https://zhuanlan.zhihu.com/p/21573239
@@ -121,6 +123,7 @@ public class WaterPalette : MonoBehaviour
                 float verticalPosition = (j - halfResolution) * unitWidth;
                 vertices[currentIdx] = new Vector3(horizontalPosition + unitWidth / 2f, 0f, verticalPosition + unitWidth / 2f);
                 normals[currentIdx] = new Vector3(0f, 1f, 0f);
+
                 uvs[currentIdx] = new Vector2(i * 1.0f / (resolution - 1), j * 1.0f / (resolution - 1));
 
                 if (i != resolution - 1 && j != resolution - 1)
@@ -173,8 +176,8 @@ public class WaterPalette : MonoBehaviour
         // res = htilde0 * c0 + htilde0mkconj * c1
         // htilde0 * c0 = (h0.x * c0.x - h0.y * c0.y, h0.x * c0.y + h0.y * c0.x)
         // htilde0mkconj * c1 = (h0conj.x * c1.x - h0conj.y * c1.y, h0conj.x * c1.y + h0conj.y * c1.x)
-        Vector2 res = new Vector2(h0.x * c0.x - h0.y * c0.y + h0mk_Conj.x * c1.x - h0mk_Conj.y * c1.y, h0.x * c0.y + h0.y * c0.x + h0mk_Conj.x * c1.y + h0mk_Conj.y * c1.x);
-        return res;
+        Vector2 h = new Vector2(h0.x * c0.x - h0.y * c0.y + h0mk_Conj.x * c1.x - h0mk_Conj.y * c1.y, h0.x * c0.y + h0.y * c0.x + h0mk_Conj.x * c1.y + h0mk_Conj.y * c1.x);
+        return h;
     }
 
     /*
@@ -226,6 +229,7 @@ public class WaterPalette : MonoBehaviour
         Vector2 r = new Vector2();
         float u = Random.value;
         float v = Random.value;
+
         r.x = Mathf.Sqrt(-2f * Mathf.Log(u)) * Mathf.Cos(2 * Mathf.PI * v);
         r.y = Mathf.Sqrt(-2f * Mathf.Log(u)) * Mathf.Sin(2 * Mathf.PI * v);
 
@@ -259,8 +263,7 @@ public class WaterPalette : MonoBehaviour
 
         float kDotW = Vector2.Dot(k.normalized, wind.normalized);
         float kDotW2 = kDotW * kDotW;
-        float w_length = wind.magnitude;
-        float L = w_length * w_length / G;
+        float L = wind.sqrMagnitude / G;
         float L2 = L * L;
 
         // l是修正系数,这里damping = 0.001
@@ -392,6 +395,7 @@ public class WaterPalette : MonoBehaviour
             for (int j = 0; j < resolution; j++)
             {
                 kz = 2 * Mathf.PI * (j - resolution / 2.0f) / length;
+                // 其实k可以优化成一个数组,很多地方用到
                 k = new Vector2(kx, kz);
 
                 // htilde(k,t) * exp(i * k·x))
@@ -425,3 +429,60 @@ public class WaterPalette : MonoBehaviour
         return new Vector3(displacement.x, height, displacement.y);
     }
 }
+
+
+/*
+普通的FFT算法
+public class FFT
+{
+    bool inverse = false ;
+
+    omega
+    Complex omega ( const int& n, const int& k )  
+    {
+        if ( ! inverse ) return Complex ( cos ( 2 * PI / n * k ), sin ( 2 * PI / n * k ) ) ;
+        return Complex ( cos ( 2 * PI / n * k ), sin ( 2 * PI / n * k ) ).conj ( ) ;
+    }
+
+    // 
+    static Complex buf [N] ;
+
+    // n是总长度N, a是一个数组(a0,a1....an-1)
+    void fft ( Complex *a, const int& n )  
+    {
+        //////////// 如果长度是一就算F[a]
+        if ( n == 1 ) return F[a];
+        
+        //////////// m = n / 2
+        const int m = n >> 1 ;
+        
+        //////////// 把所有的数字分成奇偶(数字的index而不是数字本身)两组
+        for ( int i = 0 ; i < m ; ++ i )  {
+            //////////// buf[i] = a[i * 2]
+            buf [i] = a [i << 1] ;
+            //////////// buf[i + m] = a[i * 2 + 1]
+            buf [i + m] = a [i << 1 | 1] ;
+        }
+        
+        //////////// a = buff 
+        memcpy ( a, buf, sizeof ( int ) * ( n + 1 ) ) ;
+        
+        //////////// a1从0开始，a2从m开始
+        Complex *a1 = a, *a2 = a + m;
+
+        // 分别计算a1和a2
+        fft ( a1, m ) ;
+        fft ( a2, m ) ;
+    
+        // 根据a1和a2的结果算出a(对于所有的m都算了)
+        for ( int i = 0 ; i < m ; ++ i )  {
+            Complex t = omega ( n, i ) ;
+            buf [i] = a1 [i] + t * a2 [i] ;
+            buf [i + m] = a1 [i] - t * a2 [i] ;
+        }
+
+        // 得到的结果
+        memcpy ( a, buf, sizeof ( int ) * ( n + 1 ) ) ;
+    }
+}
+//*/
