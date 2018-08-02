@@ -5,9 +5,10 @@ using UnityEngine;
 /*
 Refrence
 海洋学统计模型
+Simulating-Ocean-Water - Jerry Tessendorf
+http://www.cnblogs.com/wubugui/p/4541812.html?utm_source=tuicool&utm_medium=referral
 https://www.keithlantz.net/2011/10/ocean-simulation-part-one-using-the-discrete-fourier-transform/
 https://zhuanlan.zhihu.com/p/31670275
-http://www.cnblogs.com/wubugui/p/4541812.html?utm_source=tuicool&utm_medium=referral
 https://blog.csdn.net/toughbro/article/details/5687590
 http://www.ceeger.com/forum/read.php?tid=24976&fid=2
 
@@ -230,8 +231,11 @@ public class WaterPalette : MonoBehaviour
         float u = Random.value;
         float v = Random.value;
 
-        r.x = Mathf.Sqrt(-2f * Mathf.Log(u)) * Mathf.Cos(2 * Mathf.PI * v);
-        r.y = Mathf.Sqrt(-2f * Mathf.Log(u)) * Mathf.Sin(2 * Mathf.PI * v);
+        u = -2f * Mathf.Log(u);
+        v = 2 * Mathf.PI * v;
+
+        r.x = Mathf.Sqrt(u) * Mathf.Cos(v);
+        r.y = Mathf.Sqrt(u) * Mathf.Sin(v);
 
         return r * Mathf.Sqrt(Phillips(n, m) / 2f);
     }
@@ -338,13 +342,13 @@ public class WaterPalette : MonoBehaviour
                 }
                 float jacobian = (1 + dDdx.x) * (1 + dDdy.y) - dDdx.y * dDdy.x;
 
-                // 下面是一些优化,不知道为什么?????????????????????????????????
+                // 下面是一些优化,不知道是什么方法?????????????????????????????????
                 Vector2 noise = new Vector2(Mathf.Abs(normals[index].x), Mathf.Abs(normals[index].z)) * 0.3f;
                 float turb = Mathf.Max(1f - jacobian + noise.magnitude, 0f);
                 float xx = 1f + 3f * Mathf.SmoothStep(1.2f, 1.8f, turb);
                 xx = Mathf.Min(turb, 1.0f);
                 xx = Mathf.SmoothStep(0f, 1f, turb);
-                colors[index] = new Color(xx, xx, xx, xx);
+                colors[index] = new Color(xx, xx, xx, 1);
             }
         }
 
@@ -355,6 +359,8 @@ public class WaterPalette : MonoBehaviour
     Displacement vector
 
     (猜测)参考Gerstner Wave,h(x, t)的值是一个复数(Vecter2),x是高度(sinθ),y是位移量(cosθ)
+    上面结论是对了一半,Gerstner Wave,h(x, t)的值是一个复数,但需要的高度就是实数部分,包括下面要求的xz和normal
+    y是位移量只是根据Gerstner Wave,位移量正好是cosθ,至于方向并不关键,xz根据θ改变就行(大概)
 
     FT 傅里叶变换
     下面公式第一个 * 实际代表复数乘法
@@ -365,11 +371,13 @@ public class WaterPalette : MonoBehaviour
     x = (postion.x, postion.z)
 
     h:
-    h(x, t).x
+    h(x, t) = ∑ htilde(k,t) * exp(i * k·x))
+    h = h(x, t).x
     x,z: 
     参考Gerstner Wave,对xz进行位移
     ∑ -i * k.normalized * htilde(k,t) * exp(i * k·x))
     - i * i = 1
+    k.normalized只是提供了方向,i是为了与h(x, t)的虚部进行计算得到实数部分
     用参数choppiness来控制偏移程度
     */
 
@@ -377,6 +385,7 @@ public class WaterPalette : MonoBehaviour
     normal
     应该是up(0, 1, 0) - 切线向量
     切线向量用求导来求出
+    实数部分
     h'(x, t) = ∑ i * k * htilde(k,t) * exp(i * k·x))
     i * i = -1
     */
@@ -388,6 +397,7 @@ public class WaterPalette : MonoBehaviour
         Vector2 c, htilde_C, k;
         float kx, kz, k_length, kDotX;
 
+        // i,j相当于是2维的傅里叶变换 计算resolution * resolution次
         for (int i = 0; i < resolution; i++)
         {
             kx = 2 * Mathf.PI * (i - resolution / 2.0f) / length;
@@ -404,6 +414,9 @@ public class WaterPalette : MonoBehaviour
                     continue;
 
                 kDotX = Vector2.Dot(k, x);
+                // w上标k下标n,是傅里叶变换的因子(我自己的说法.. <=不正确,其实左边的htilde(k,t)才是)
+                // 因子去和每一个寻找相同频率的波,算出它在当前位置(x,z)的高度,遍历了所有频率就能算出当前位置的高度 <=不正确,只是采样点
+                // Vector2 temp = htilde(i * resolution + j, k);
                 c = new Vector2(Mathf.Cos(kDotX), Mathf.Sin(kDotX));
                 Vector2 temp = htilde(i * resolution + j, k);
                 htilde_C = new Vector2(temp.x * c.x - temp.y * c.y, temp.x * c.y + temp.y * c.x);
@@ -411,7 +424,7 @@ public class WaterPalette : MonoBehaviour
                 height += htilde_C.x;
 
                 // i * k * htilde_C
-                // 为什么是和复部相乘?????????????????????????????????
+                // 为什么是和复部相乘=>得到实数部分
                 n += new Vector3(-kx * htilde_C.y, 0f, -kz * htilde_C.y);
 
                 // -i * k.direction * htilde_C

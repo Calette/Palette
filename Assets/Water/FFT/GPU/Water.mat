@@ -4,9 +4,9 @@
 Material:
   serializedVersion: 6
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_Name: Unlit_NewUnlitShader
+  m_Name: Water
   m_Shader: {fileID: 4800000, guid: c5493b41332019a488c69f5174747ab2, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
@@ -44,7 +44,7 @@ Material:
     - _LightWrap: 0.79
     - _WhiteDegree: 2
     m_Colors:
-    - _RimColor: {r: 0.03529412, g: 0.03529412, b: 0.03529412, a: 1}
+    - _RimColor: {r: 0.039215688, g: 0.039215688, b: 0.039215688, a: 1}
     - _SpecColor: {r: 1, g: 0.5568628, b: 0.21176472, a: 1}
-    - _SpecularColor: {r: 1, g: 0.7852014, b: 0.6179246, a: 1}
-    - _Tint: {r: 0.23171058, g: 0.3315871, b: 0.38679248, a: 1}
+    - _SpecularColor: {r: 0.9811321, g: 0.78431374, b: 0.6666667, a: 1}
+    - _Tint: {r: 0.3137255, g: 0.39215687, b: 0.43137255, a: 1}

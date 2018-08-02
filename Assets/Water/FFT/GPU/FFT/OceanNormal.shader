@@ -38,15 +38,21 @@
 
 			float4 frag(FFTVertexOutput i) : SV_TARGET
 			{
+				// uv坐标
 				float texel = 1 / _Resolution;
+				// 实际坐标
 				float texelSize = _Length / _Resolution;
 
+				// 得到当前点的xz位移
 				float3 center = tex2D(_DisplacementMap, i.uv).rgb;
+
+				// 获取上下左右四个点的位置与当前点的连线
 				float3 right = float3(texelSize, 0, 0) + GetVec(i.uv + float4(texel, 0, 0, 0)) - center;
 				float3 left = float3(-texelSize, 0, 0) + GetVec(i.uv + float4(-texel, 0, 0, 0)) - center;
 				float3 top = float3(0, 0, -texelSize) + GetVec(i.uv + float4(0, -texel, 0, 0)) - center;
 				float3 bottom = float3(0, 0, texelSize) + GetVec(i.uv + float4(0, texel, 0, 0)) - center;
 
+				// 计算四个面的法向量
 				float3 topRight = cross(right, top);
 				float3 topLeft = cross(top, left);
 				float3 bottomLeft = cross(left, bottom);
@@ -54,6 +60,7 @@
 
 				//return float4(normalize(float3(-(tex2D(_DisplacementMap, i.texcoord).r), 1, -(tex2D(_DisplacementMap, i.texcoord).b))), 1.0);
 
+				// 平均四个面的法向量
 				return float4(normalize(topRight + topLeft + bottomLeft + bottomRight), 1.0);
 			}
 

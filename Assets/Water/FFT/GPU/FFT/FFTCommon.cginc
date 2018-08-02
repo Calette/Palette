@@ -30,10 +30,9 @@ FFTVertexOutput vert_quad(FFTVertexInput v)
 }
 
 // 随机数
-inline float UVRandom(float2 uv, float salt, float random)
+inline float Random(float2 seed)
 {
-	uv += float2(salt, random);
-	return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453);
+	return frac(sin(dot(seed, float2(12.9898, 78.233))) * 43758.5453);
 }
 
 // 乘法
@@ -62,7 +61,6 @@ n,m ∈ (0, Resolution)
 inline float2 GetWave(float n, float m, float len, float res)
 {
 	//return PI * float2(2 * n - res, 2 * m - res) / len;
-
 	n -= 0.5;
 	m -= 0.5;
 	n = ((n < res * 0.5) ? n : n - res);
@@ -74,13 +72,13 @@ inline float2 GetWave(float n, float m, float len, float res)
 Phillips spectrum Phillips频谱
 Phillips(k) = A ( exp(-1/((K * L)^2)) / K^4 ) * |dot(k, w)|^2
 
-这个经验公式在波长比较小的时候,即波数很大的时候收敛性很差
-因此当波长远远小于L的时候,可以将该公式乘一个修正因子来修正
-
 Phillips(k) = A ( exp(-1/((K * L)^2)) / K^4 ) * |dot(k, w)|^2 * exp(-k^2 * l^2)
 
 L = V^2 / g 是持续维v的风在海面上产生最大可能性的海浪的波长
 w 是风力的方向
+
+这个经验公式在波长比较小的时候,即波数很大的时候收敛性很差
+因此当波长远远小于L的时候,可以将该公式乘一个修正因子来修正
 
 下面我还没懂?????????????????????????????????
 |dot(k, w)|^2 消除波在风向的垂直方向的移动
@@ -89,19 +87,28 @@ w 是风力的方向
 inline float Phillips(float n, float m, float amp, float2 wind, float res, float len)
 {
 	float2 k = GetWave(n, m, len, res);
+	// kx, kz ∈ (-π, π)
+	// klen2 (0, 2π^2)
 	float klen2 = k.x * k.x + k.y * k.y;
 	float klen4 = klen2 * klen2;
+
+	// kx,z在0附近
 	if(klen2 < EPSILON2)
 		return 0;
 
+	// 应该是k可能很小要先normalize
+	//float kDotW = normalize(dot(k, wind));
 	float kDotW = dot(normalize(k), normalize(wind));
 	float kDotW2 = kDotW * kDotW;
 	float L = (wind.x * wind.x + wind.y * wind.y) / G;
 	float L2 = L * L;
 
 	// l是修正系数,这里damping = 0.001
-	float damping = 0.001;
-	float l2 = L2 * damping * damping;
+	//float damping = 0.001;
+	// l的平方直接乘两次
+	// length比较大的时候,修正因子exp(-klen2 * l2)其实差不多等于1
+	// 但length < 10
+	float l2 = L2 * 0.00001;
 	return amp * exp(-1 / (klen2 * L2)) / klen4 * kDotW2 * exp(-klen2 * l2);
 }
 
@@ -118,17 +125,20 @@ Phillips(N - n, N - m) 等价于 Phillips(-n, -m)
 */
 
 /*
-r1,r2都是随机数种子
+通过测量公海上浪高的方差特性，来生成振幅的随机实现
+r1,r2都是Random随机数种子,调换一下位子就可以得到不同的随机数(可以看作完全不相关)
 */
 inline float2 hTilde0(float2 uv, float r1, float r2, float phi)
 {
+	// Box-Muller变换法来获得正态分布的随机数
 	// r : Circular gaussian distribution
 	// 要求平均值是0，方差小于1的分布
 	float2 r;
 
 	// 获取随机数
-	float rand1 = UVRandom(uv, 10.612, r1);
-	float rand2 = UVRandom(uv, 11.899, r2);
+	// 保证不同uv,hTilde0两次获取的随机数都不相同
+	float rand1 = Random(uv + float2(r1, r2));
+	float rand2 = Random(uv + float2(r2, r1));
 
 	// log(0) = -∞
 	rand1 = clamp(rand1, 0.001, 1);

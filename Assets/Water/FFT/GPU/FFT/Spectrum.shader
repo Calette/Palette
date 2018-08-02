@@ -42,7 +42,6 @@
 				float2 pv = float2(cos(phase), sin(phase));
 				float2 h0 = tex2D(_Initial, i.uv).rg;
 				float2 h0conj = tex2D(_Initial, i.uv).ba;
-				//h0conj = MultByI(h0conj);
 				float2 h = MultComplex(h0, pv) + MultComplex(h0conj, Conj(pv));
 
 				// ∑ -i * k.normalized * htilde(k,t) * exp(i * k·x))
@@ -50,6 +49,7 @@
 				w = max(0.000001, w);
 				float2 hx = -MultByI(h * wave.x / w) * _Choppiness;
 				float2 hz = -MultByI(h * wave.y / w) * _Choppiness;
+				// 最后计算得到实数部分就行(r,b)
 				return float4(hx, hz);
 			}
 

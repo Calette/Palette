@@ -36,7 +36,6 @@ public class ShowFPS : MonoBehaviour {
         bb.normal.textColor = new Color(1f, 1f, 1f);   //设置字体颜色的
         bb.fontSize = 40;       //当然，这是字体大小
 
-        //居中显示FPS
         GUI.Label(new Rect(0, 0, 200, 200), m_FPS.ToString("#0.00"), bb);
     }
 }
