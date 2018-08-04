@@ -269,7 +269,7 @@ public class WaterGPU : MonoBehaviour
         // 因为是二维的所以要乘2
         int iterations = Mathf.CeilToInt((float)Mathf.Log(resolution * detail, 2)) * 2;
 
-        iterations = FFTTestIterations;
+        //iterations = FFTTestIterations;
 
         // 继续算蝴蝶网络iterations次
         for (int i = 0; i < iterations; i++)

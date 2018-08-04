@@ -17,6 +17,8 @@ https://www.bilibili.com/video/av25840793/?p=24&t=1173
 https://zhuanlan.zhihu.com/p/31584464
 https://oi.men.ci/fft-notes/
 http://www.cnblogs.com/wubugui/p/4446230.html
+http://www.cnblogs.com/wubugui/p/4521174.html
+https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter48.html
 
 其他
 https://zhuanlan.zhihu.com/p/21573239
@@ -354,6 +356,11 @@ public class WaterPalette : MonoBehaviour
 
         mesh.colors = colors;
     }
+
+    /*
+    FT 傅里叶变换要用复数来做,h(x, t)用复数计算只是为了利用傅里叶变换
+    数学上很多问题都是用复数来解决问题,得到的虚部和我们需要的结果是没有什么关系的(应该)
+    */
 
     /*
     Displacement vector
