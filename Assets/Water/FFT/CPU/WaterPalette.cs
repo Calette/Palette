@@ -164,6 +164,7 @@ public class WaterPalette : MonoBehaviour
 
     // h(k, t) = h0 * exp{i * w(k) * t} + h0mk_Conj * exp{-i * w(k) * t}
     // 返回值是一个复数(参考Gerstner Wave,猜测x是高度(sinθ),y是位移量(cosθ))
+    // 用复数的原因单纯是FT要用复数,y是位移量只是凑巧
     private Vector2 htilde(int index, Vector2 k)
     {
         Vector2 h0 = verttilde[index];
