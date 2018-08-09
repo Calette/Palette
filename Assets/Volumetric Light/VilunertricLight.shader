@@ -27,6 +27,13 @@
 
 			float4 GetWorldPositionFromDepthValue(float2 uv, float linearDepth)
 			{
+				/*
+				_ProjectionParams 投影参数
+				x = 1,如果投影翻转则x = -1
+				y是camera近裁剪平面
+				z是camera远裁剪平面
+				w是1/远裁剪平面
+				*/
 				float camPosZ = _ProjectionParams.y + (_ProjectionParams.z - _ProjectionParams.y) * linearDepth;
 
 				// unity_CameraProjection._m11 = near / t，其中t是视锥体near平面的高度的一半。
@@ -42,15 +49,20 @@
 				return mul(unity_CameraToWorld, camPos);
 			}
 
-			inline float4 GetCascadeWeights_SplitSpheres(float3 wpos)
+			inline float4 GetWeights(float3 wpos)
 			{
+				// dir
 				float3 fromCenter0 = wpos.xyz - unity_ShadowSplitSpheres[0].xyz;
 				float3 fromCenter1 = wpos.xyz - unity_ShadowSplitSpheres[1].xyz;
 				float3 fromCenter2 = wpos.xyz - unity_ShadowSplitSpheres[2].xyz;
 				float3 fromCenter3 = wpos.xyz - unity_ShadowSplitSpheres[3].xyz;
+				// length
 				float4 distances2 = float4(dot(fromCenter0, fromCenter0), dot(fromCenter1, fromCenter1), dot(fromCenter2, fromCenter2), dot(fromCenter3, fromCenter3));
 
+				// 和unity_ShadowSplit的SqRadii比较
+				// 小于表示在范围内,weight = 1
 				float4 weights = float4(distances2 < unity_ShadowSplitSqRadii);
+				// 如果在前面的unity_ShadowSplit也包含了该点,则weight = 0
 				weights.yzw = saturate(weights.yzw - weights.xyz);
 				return weights;
 			}
@@ -63,8 +75,11 @@
 				float3 sc3 = mul(unity_WorldToShadow[3], wpos).xyz;
 				float4 shadowMapCoordinate = float4(sc0 * cascadeWeights[0] + sc1 * cascadeWeights[1] + sc2 * cascadeWeights[2] + sc3 * cascadeWeights[3], 1);
 
+				// clip的z是(1, 0)
 				#if defined(UNITY_REVERSED_Z)
+				    // 假如超出了有阴影的范围noCascadeWeights = 1
 					float  noCascadeWeights = 1 - dot(cascadeWeights, float4(1, 1, 1, 1));
+					// 返回(0, 0, 1, 0)
 					shadowMapCoordinate.z += noCascadeWeights;
 				#endif
 
@@ -112,6 +127,9 @@
 			#define SHADOWMAPSAMPLER_AND_TEXELSIZE_DEFINED
 
 
+			//#define UNITY_USE_CASCADE_BLENDING 0
+			//#define UNITY_CASCADE_BLEND_DISTANCE 0.1
+
 			/*
 			struct Point 
 			{
@@ -142,13 +160,17 @@
 				return camPos.xyz;
 			}
 
+			/*
+			// 是错误的
 			inline fixed4 getCascadeWeights(float3 wpos, float z)
 			{
+				// View坐标系的z和_LightSplitsNear/Far比较,只有在_LightSplits中 weights = 1
 				fixed4 zNear = float4(z >= _LightSplitsNear);
 				fixed4 zFar = float4(z < _LightSplitsFar);
 				fixed4 weights = zNear * zFar;
 				return weights;
 			}
+			*/
 
 			inline fixed GetAttenuation(float4 worldPos)
 			{
@@ -158,8 +180,8 @@
 
 
 				//shadowCoord = mul(unity_WorldToShadow[0], worldPos);
-				float4 shadowCoord = getShadowCoord(worldPos, getCascadeWeights(worldPos.xyz, z));
-
+				//float4 shadowCoord = getShadowCoord(worldPos, getCascadeWeights(worldPos.xyz, z));
+				float4 shadowCoord = getShadowCoord(worldPos, GetWeights(worldPos.xyz));
 
 				attenuation = UNITY_SAMPLE_SHADOW(_ShadowMapTexture, shadowCoord);
 
@@ -180,9 +202,7 @@
 				//return 1 - linearDepth;
 
 				float4 worldPos = GetWorldPositionFromDepthValue(i.uv, linearDepth);
-				//return float4(worldPos, 1);
-
-
+				//return worldPos;
 
 				/*
 				#if UNITY_UV_STARTS_AT_TOP

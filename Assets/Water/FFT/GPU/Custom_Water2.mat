@@ -6,8 +6,8 @@ Material:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_Name: Water
-  m_Shader: {fileID: 4800000, guid: c5493b41332019a488c69f5174747ab2, type: 3}
+  m_Name: Custom_Water2
+  m_Shader: {fileID: 4800000, guid: 3a2234085992595478404f294303ef3a, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -30,16 +30,11 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     - _White:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _BaseRoughness: 0.5
     - _Glossiness: 100
     - _LightWrap: 0.79
     - _SeaHeight: 0.39
@@ -47,7 +42,6 @@ Material:
     - _WhiteDegree: 0
     m_Colors:
     - _RimColor: {r: 0.039215688, g: 0.039215688, b: 0.039215688, a: 1}
-    - _SpecColor: {r: 1, g: 0.5568628, b: 0.21176472, a: 1}
-    - _SpecularColor: {r: 0.9811321, g: 0.78431374, b: 0.6666667, a: 1}
-    - _Tint: {r: 0.3137255, g: 0.39215687, b: 0.43137255, a: 1}
-    - _WaveColor: {r: 0.8, g: 0.9019608, b: 0.6, a: 1}
+    - _SpecularColor: {r: 0.9803922, g: 0.7843138, b: 0.6666667, a: 1}
+    - _Tint: {r: 0.41598436, g: 0.6505587, b: 0.7169812, a: 1}
+    - _WaveColor: {r: 0.5761958, g: 0.8301887, b: 0.48949805, a: 1}

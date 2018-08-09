@@ -11,7 +11,7 @@ public class VilunertricLight : MonoBehaviour
     public float volumetricIntensity = 0.1f;
 
     private Camera cam;
-    public Material mat;
+    private Material mat;
 
     // Use this for initialization
     void Awake()

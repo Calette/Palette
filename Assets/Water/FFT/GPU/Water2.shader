@@ -1,4 +1,4 @@
-﻿Shader "Custom/Water"
+﻿Shader "Custom/Water2"
 {
 	Properties
 	{
@@ -6,13 +6,16 @@
 		_Height ("Height Map", 2D) = "black" {}
 		_Bump ("Normal Map",2D) = "bump" {}
 		_White ("White Cap Map", 2D) = "black" {}
-		_WaveColor("Wave Color", Color) = (1, 1, 1, 1)
-		_LightWrap ("Light Wrapping Value", Float) = 1 
+		_LightWrap ("Light Wrapping Value", Float) = 1
 		_Tint ("Color Tint(50,70,80)(60,75,85)(75,95,105)(80,100,110)(100,155,170)", Color) = (0.5, 0.65, 0.75, 1)
 		_SpecularColor ("Specular Color", Color) = (1, 0.25, 0, 1)
 		_Glossiness ("Glossiness", Float) = 64
-		_WhiteDegree("WhiteDegree", Float) = 1
-		_RimColor("Rim Color", Color) = (0, 0, 1, 1)
+		_WhiteDegree ("WhiteDegree", Float) = 1
+		_RimColor ("Rim Color", Color) = (0, 0, 1, 1)
+
+		_WaveColor("Wave Color", Color) = (0.8, 0.9, 0.6, 1)
+		_SeaHeight("SeaHeight", Float) = 0
+		_WaveColorDegree("_WaveColorDegree", Float) = 1
 	}
 
 	SubShader
@@ -35,6 +38,8 @@
 		float _WhiteDegree;
 		float _LightWrap;
 		fixed4 _RimColor;
+		float _SeaHeight;
+		float _WaveColorDegree;
 
 		struct VertexInput
 		{
@@ -90,7 +95,9 @@
 
 				//return float4(i.posWorld.x / 50, i.posWorld.y / 10, i.posWorld.z / 50, 1);
 				//return float4(lightDir, 1);
-				float3 view = normalize(_WorldSpaceCameraPos.xyz - i.posWorld.xyz);
+				float3 distance = _WorldSpaceCameraPos.xyz - i.posWorld.xyz;
+
+				float3 view = normalize(distance);
 
 				float4 diffuse = saturate(dot(normal, lightDir));
 				diffuse = pow(saturate(diffuse * (1 - _LightWrap) + _LightWrap), 2 * _LightWrap + 1) * _Tint * _LightColor0;
@@ -106,9 +113,13 @@
 				float4 white = saturate(pow(i.color / 2, 2));
 				//return white;
 
+				// 波浪
+				//float atten = max(1.0 - dot(distance, distance) * 0.001, 0.0);
+				float3 color = _WaveColor * (i.posWorld.y - _SeaHeight) * _WaveColorDegree;// *atten;
+
 				//diffuse = lerp(diffuse, _WaveColor, i.color.r);
 
-				return diffuse + specular + white + rim;
+				return diffuse + specular + white + rim + float4(color, 1);
 				//return diffuse + specular + pow(i.color / 2, _WhiteDegree) + rim;
 			}
 
