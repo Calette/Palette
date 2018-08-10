@@ -107,7 +107,11 @@
 
 				return o;
 			}
-			
+
+			sampler3D _NoiseTexture;
+			float4 _NoiseData;
+			float4 _NoiseVelocity;
+
 			sampler2D _MainTex;
 			sampler2D _CameraDepthTexture;
 			float4x4 _InverseViewProjectionMatrix;
@@ -139,7 +143,7 @@
 			};
 			*/
 
-
+			/*
 			inline float3 computeCameraSpacePosFromDepthAndInvProjMat(float4 uv)
 			{
 				float zdepth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv.xy);
@@ -159,9 +163,10 @@
 				camPos.z *= -1;
 				return camPos.xyz;
 			}
+			*/
 
 			/*
-			// 是错误的
+			// 没有多层级阴影(大概)
 			inline fixed4 getCascadeWeights(float3 wpos, float z)
 			{
 				// View坐标系的z和_LightSplitsNear/Far比较,只有在_LightSplits中 weights = 1
@@ -190,10 +195,19 @@
 				return attenuation;
 			}
 
+			float GetDensity(float3 wpos)
+			{
+				float density = 1;
+				float noise = tex3D(_NoiseTexture, frac(wpos * _NoiseData.x + float3(_Time.y * _NoiseVelocity.x, 0, _Time.y * _NoiseVelocity.y)));
+				noise = saturate(noise - _NoiseData.z) * _NoiseData.y;
+				density = saturate(noise);
+				return density;
+			}
+
 			fixed4 frag (v2f i) : SV_Target
 			{
 				//return float4(i.uv, 0, 1);
-				float4 color = tex2D(_MainTex, i.uv);
+				//float4 color = tex2D(_MainTex, i.uv);
 				float depth = tex2D(_CameraDepthTexture, i.uv).r;
 
 
@@ -224,6 +238,7 @@
 
 				
 				// 已经取得的世界空间近裁面坐标
+				// 简化成摄像机位置
 				//float3 startPos = _NearLeftBottom + i.uv.x * _NearU + i.uv.y * _NearV;   
 				float3 startPos = _WorldSpaceCameraPos.xyz;
 				//return float4(startPos, 1);
@@ -270,23 +285,29 @@
 				float intensity = 0;
 
 
-
 				for (int index = 0; index < _SampleCount; ++index) 
 				{    
 					currentPoint += direction * perNodeLength;   
+					float extinction = index * perNodeLength * 0.005;
 					// 获得当前坐标的阴影遮挡信息
-					intensity += GetAttenuation(float4(currentPoint, 1));
-					//float cosAngle = saturate(dot(_WorldSpaceLightPos0.xyz, -direction));
 
-					//intensity += MieScattering(cosAngle, _MieG);
+					float density = GetDensity(currentPoint);
+
+					intensity += GetAttenuation(float4(currentPoint, 1)) * exp(-extinction) * density;
 				}
+				float cosAngle = saturate(dot(_WorldSpaceLightPos0.xyz, direction));
 
+				//return cosAngle;
 
+				//return MieScattering(cosAngle, _MieG);
 
-				intensity *= _VolumetricIntensity * m_length;
+				intensity *= MieScattering(cosAngle, _MieG) * _VolumetricIntensity * m_length;
+
 				//return intensity;
+				//return worldPos;
+				//return density;
 
-				color = tex2D(_MainTex, i.uv);
+				float4 color = tex2D(_MainTex, i.uv);
 				color.rgb += intensity * _LightColor0;
 
 				return color;
