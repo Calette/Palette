@@ -21,7 +21,7 @@ public class VilunertricLight : MonoBehaviour
         cam = GetComponent<Camera>();
         mat = new Material(shader);
 
-        //*
+        /*
         // ViewProjectionMatrix: NDCToViewToWorld
         // on some platforms they have to be transformed a bit to match the native API requirements
         Matrix4x4 inverseViewProjectionMatrix = GL.GetGPUProjectionMatrix(cam.projectionMatrix, true);

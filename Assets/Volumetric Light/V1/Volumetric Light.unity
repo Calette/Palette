@@ -281,7 +281,7 @@ MonoBehaviour:
   mieG: 0.33
   maxLength: 23
   sampleCount: 256
-  volumetricIntensity: 0.0165
+  volumetricIntensity: 4
   NoiseVelocity: {x: 0.33, y: 0.1}
   NoiseScale: 0.33
   NoiseIntensity: 0.75

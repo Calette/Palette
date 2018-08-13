@@ -181,7 +181,7 @@
 			{
 				fixed4 attenuation;
 
-				float z = mul(unity_WorldToCamera, worldPos).z;
+				//float z = mul(unity_WorldToCamera, worldPos).z;
 
 
 				//shadowCoord = mul(unity_WorldToShadow[0], worldPos);
@@ -195,10 +195,12 @@
 				return attenuation;
 			}
 
-			float GetDensity(float3 wpos)
+			float GetDensity(float3 currentPoint)
 			{
 				float density = 1;
-				float noise = tex3D(_NoiseTexture, frac(wpos * _NoiseData.x + float3(_Time.y * _NoiseVelocity.x, 0, _Time.y * _NoiseVelocity.y)));
+
+				float noise = tex3D(_NoiseTexture, frac(currentPoint * _NoiseData.x + float3(_Time.y * _NoiseVelocity.x, 0, _Time.y * _NoiseVelocity.y)));
+
 				noise = saturate(noise - _NoiseData.z) * _NoiseData.y;
 				density = saturate(noise);
 				return density;
@@ -284,15 +286,15 @@
 
 				float intensity = 0;
 
-
 				for (int index = 0; index < _SampleCount; ++index) 
 				{    
-					currentPoint += direction * perNodeLength;   
+					currentPoint += direction * perNodeLength;
+
 					float extinction = index * perNodeLength * 0.005;
-					// 获得当前坐标的阴影遮挡信息
 
 					float density = GetDensity(currentPoint);
 
+					// 获得当前坐标的阴影遮挡信息
 					intensity += GetAttenuation(float4(currentPoint, 1)) * exp(-extinction) * density;
 				}
 				float cosAngle = saturate(dot(_WorldSpaceLightPos0.xyz, direction));
@@ -301,7 +303,7 @@
 
 				//return MieScattering(cosAngle, _MieG);
 
-				intensity *= MieScattering(cosAngle, _MieG) * _VolumetricIntensity * m_length;
+				intensity *= MieScattering(cosAngle, _MieG) * _VolumetricIntensity * m_length / _SampleCount;
 
 				//return intensity;
 				//return worldPos;
