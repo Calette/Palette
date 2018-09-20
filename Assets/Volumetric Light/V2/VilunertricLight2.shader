@@ -29,6 +29,7 @@
 			sampler3D _NoiseTexture;
 			float4 _NoiseData;
 			float4 _NoiseVelocity;
+			sampler2D _DitherTexture;
 
 			sampler2D _MainTex;
 			sampler2D _CameraDepthTexture;
@@ -126,10 +127,14 @@
 			{
 				float density = 1;
 
+				// _NoiseData.x(Noise Scale)太大会导致每次GPU读取tex3D时击中cache几率太低？
 				float noise = tex3D(_NoiseTexture, frac(currentPoint * _NoiseData.x + float3(_Time.y * _NoiseVelocity.x, 0, _Time.y * _NoiseVelocity.y)));
 
 				noise = saturate(noise - _NoiseData.z) * _NoiseData.y;
 				density = saturate(noise);
+
+				float a = saturate((currentPoint.y - 100) * -0.01);
+				return density * a;
 				return density;
 			}
 
@@ -142,14 +147,13 @@
 			struct v2f
 			{
 				float2 uv : TEXCOORD0;
-				float4 vertex : SV_POSITION;
+				float4 pos : SV_POSITION;
 			};
 
 			v2f vert (appdata v)
 			{
 				v2f o;
-				o.vertex = UnityObjectToClipPos(v.vertex);
-
+				o.pos = UnityObjectToClipPos(v.vertex);
 				o.uv = v.uv;
 
 				return o;
@@ -160,11 +164,14 @@
 				float depth = tex2D(_CameraDepthTexture, i.uv).r;
 				//return depth;
 
-				float linearDepth = Linear01Depth(depth);
+				//float linearDepth = Linear01Depth(depth);
 				//return 1 - linearDepth;
 
-				float4 worldPos = GetWorldPositionFromDepthValue(i.uv, linearDepth);
-				//return worldPos;
+				float4 pos = mul(_InverseViewProjectionMatrix, float4(i.uv.x * 2 - 1, 1 - i.uv.y * 2, depth, 1));
+
+				//float4 worldPos = GetWorldPositionFromDepthValue(i.uv, linearDepth);
+				float3 worldPos = pos.rgb / pos.w;
+				//return float4(worldPos, 1.0);
 
 				// 已经取得的世界空间近裁面坐标
 				// 简化成摄像机位置
@@ -172,27 +179,38 @@
 				float3 startPos = _WorldSpaceCameraPos.xyz;
 				//return float4(startPos, 1);
 
-				float3 direction = normalize(worldPos - startPos);    
+				float3 direction = normalize(worldPos - startPos);
 				//return float4(direction, 1);
 
 				float m_length = min(_MaxLength, length(worldPos - startPos));
-				//return m_length / 10;
+				//return m_length / _MaxLength;
 
 				//return shadowCoord;
 
-				float perNodeLength = m_length / _SampleCount;          
-				float3 currentPoint = startPos;    
+				float perNodeLength = m_length / _SampleCount;
 
 				float intensity = 0;
 
-				for (int index = 0; index < _SampleCount; ++index) 
-				{    
+#ifdef DITHER_4_4
+				float2 interleavedPos = fmod(floor(i.pos), 4.0);
+				float offset = tex2D(_DitherTexture, interleavedPos / 4.0).w;
+#else
+				float2 interleavedPos = fmod(floor(i.pos), 8.0);
+				float offset = tex2D(_DitherTexture, interleavedPos / 8.0).w;
+#endif
+
+				float3 currentPoint = startPos + perNodeLength * offset;
+
+				for (int index = 0; index < _SampleCount; ++index)
+				{   
 					currentPoint += direction * perNodeLength;
 
 					float extinction = index * perNodeLength * 0.005;
 
-
 					float density = GetDensity(currentPoint);
+
+					// 高度
+					density *= exp(clamp(currentPoint.y * -0.1, -100, 0));
 
 					// 获得当前坐标的阴影遮挡信息
 					intensity += GetAttenuation(float4(currentPoint, 1)) * exp(-extinction) * density;
@@ -202,11 +220,23 @@
 
 				//return MieScattering(cosAngle, _MieG);
 
+				//return intensity * _VolumetricIntensity;
+
 				intensity *= MieScattering(cosAngle, _MieG) * _VolumetricIntensity * m_length / _SampleCount;
 
 				//return intensity;
 				//return worldPos;
 				//return density;
+
+				//return tex2D(_DitherTexture, fmod(floor(i.pos), 8.0) / 8.0).w * float4(1, 1, 1, 1);
+
+				//return float4(fmod(floor(i.uv * float2(1920, 1080)), 8.0) / 8.0, 0, 1);
+
+				//return float4(fmod(floor(.x), 8.0) / 8.0, 0, 0, 1);
+
+				//return offset * float4(1, 1, 1, 1);
+
+				//intensity /= (1 + intensity);
 
 				return intensity * _LightColor0;
 			}

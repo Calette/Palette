@@ -30,19 +30,17 @@ public class VilunertricLight : MonoBehaviour
         inverseViewProjectionMatrix = inverseViewProjectionMatrix.inverse;
 
         // 近裁面的四个顶点, gl中近裁面的z是1
-        Vector3 leftBottom = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(-1, -1, 1));
-        Vector3 rightBottom = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(1, -1, 1));
-        Vector3 leftTop = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(-1, 1, 1));
-
-        Vector3 test = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(-1, -1, 0));
-
-        //Vector3 rightTop = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(1, 1, 1));
+        // y轴也是反的
+        Vector3 leftTop = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(-1, -1, 1));
+        Vector3 rightTop = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(1, -1, 1));
+        Vector3 leftBottom = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(-1, 1, 1));
+        Vector3 rightBottom = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(1, 1, 1));
 
         // 远裁面的四个顶点，gl中远裁面的z是0
-        //leftBottom = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(-1, -1, 0));
-        //rightBottom = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(1, -1, 0));
-        //leftTop = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(-1, 1, 0));
-        //rightTop = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(1, 1, 0));
+        //leftTop = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(-1, -1, 0));
+        //rightTop = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(1, -1, 0));
+        //leftBottom = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(-1, 1, 0));
+        //rightBottom = inverseViewProjectionMatrix.MultiplyPoint(new Vector3(1, 1, 0));
 
         Vector3 nearU = rightBottom - leftBottom;
         Vector3 nearV = leftTop - leftBottom;

@@ -3,6 +3,7 @@
 	Properties
 	{
 		_MainTex ("Texture", 2D) = "white" {}
+		_Exposure("WhiteDegree", Float) = 2
 	}
 		SubShader
 	{
@@ -39,12 +40,19 @@
 			
 			sampler2D _MainTex;
 			sampler2D _Src;
+			float _Exposure;
 
 			fixed4 frag (v2f i) : SV_Target
 			{
-				fixed4 col = tex2D(_MainTex, i.uv);
-				fixed4 src = tex2D(_Src, i.uv);
-				return col + src;
+				fixed3 col = tex2D(_MainTex, i.uv).rgb;
+				fixed3 src = tex2D(_Src, i.uv).rgb;
+				col += src;
+
+				if (_Exposure > 0)
+					col = float3(1.0, 1.0, 1.0) - exp(-col * _Exposure);
+				//col /= (fixed3(1, 1, 1) + col);
+				//col = col / (col.r * 0.27 + col.g * 0.67 + col.b * 0.06);
+				return fixed4(col, 1.0);
 			}
 			ENDCG
 		}

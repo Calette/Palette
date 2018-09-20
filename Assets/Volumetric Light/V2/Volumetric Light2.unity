@@ -280,18 +280,20 @@ MonoBehaviour:
   shader: {fileID: 4800000, guid: d8917b9b2de00ad498e61554c3e272b4, type: 3}
   mieG: 0.33
   maxLength: 23
-  sampleCount: 256
-  volumetricIntensity: 4
+  sampleCount: 100
+  volumetricIntensity: 5
   NoiseVelocity: {x: 0.1, y: 0.1}
   NoiseScale: 0.5
   NoiseIntensity: 0.75
   NoiseIntensityOffset: 0.2
   data: {fileID: 4900000, guid: e3261483671f03d49bb8ad0fff462aaf, type: 3}
   blurShader: {fileID: 4800000, guid: 9cfc15fd83ad08c45b1ad35c00529881, type: 3}
-  iterations: 3
+  iterations: 2
   blurSpread: 0.6
   downSample: 2
   blendShader: {fileID: 4800000, guid: 6fed9eaba1621684f9d944da9d80f1af, type: 3}
+  HDR: 0
+  onlyLighting: 0
 --- !u!114 &549700020
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -346,6 +348,10 @@ Prefab:
     - target: {fileID: 1137693474337966, guid: 28e2d1b9bdaabd34b9a6a280ea5b21cd, type: 2}
       propertyPath: m_Name
       value: GameObject (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 1137693474337966, guid: 28e2d1b9bdaabd34b9a6a280ea5b21cd, type: 2}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 28e2d1b9bdaabd34b9a6a280ea5b21cd, type: 2}
